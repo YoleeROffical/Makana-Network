@@ -1,12 +1,28 @@
-services:
-  homepage:
-    image: ghcr.io/gethomepage/homepage:latest
-    container_name: homepage
-    environment:
-      - TZ=Europe/Stockholm
-      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.33:3000,yoleer.eu
-    volumes:
-      - /opt/homepage:/app/config
-    ports:
-      - 3000:3000
-    restart: unless-stopped
+title: YoleeR
+background:
+     image: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwallpaperaccess.com%2Ffull%2F8045532.png&f=1&nofb=1&ipt=378e75280a303573ad21b7fc592980601f4e0f878d156d96c755998f01210a2f"
+     blur: sm
+     saturate: 150
+     brightness: 50
+     opacity: 100
+theme: dark
+color: slate
+
+
+
+layout:
+  Management:
+    style: row
+    columns: 3
+  Media:
+    style: row
+    columns: 4
+  Automation:
+    style: row
+    columns: 3
+  Networking & Security:
+    style: row
+    columns: 2
+  Tailscale:
+    style: row
+    columns: 4
