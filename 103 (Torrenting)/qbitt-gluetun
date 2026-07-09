@@ -1,0 +1,39 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8888:8888/tcp
+      - 8388:8388/tcp
+      - 8388:8388/udp
+      - 8080:8080
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=*
+      - WIREGUARD_ADDRESSES=*
+      - SERVER_COUNTRIES=Sweden
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.1.0/24
+    volumes:
+      - /opt/gluetun:/gluetun
+    restart: unless-stopped
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Stockholm
+      - WEBUI_PORT=8080
+    volumes:
+      - /opt/qbittorrent:/config
+      - /media/downloads:/media/downloads
+    restart: unless-stopped
