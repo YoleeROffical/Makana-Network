@@ -1,0 +1,106 @@
+- System:
+    - Proxmox:
+        icon: proxmox.png
+        href: https://192.168.1.10:8006
+        description: Stella - Where most things run
+        siteMonitor: https://192.168.1.10:8006
+
+    - Portainer:
+        icon: portainer.png
+        href: https://192.168.1.33:9443
+        description: Docker Management
+        siteMonitor: https://192.168.1.33:9443
+
+    - CraftyController:
+        icon: "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/svg/crafty-controller.svg"
+        href: https://crafty.yoleer.eu/
+        description: Minecraft Server Management
+        siteMonitor: https://crafty.yoleer.eu/
+
+
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: https://jelly.yoleer.eu
+        description: Media Server
+        siteMonitor: http://192.168.1.31:8096
+
+    - Nextcloud:
+        icon: nextcloud.png
+        href: https://cloud.yoleer.eu
+        description: Personal Cloud
+        siteMonitor: https://cloud.yoleer.eu
+
+    - Seerr:
+        icon: jellyseerr.png
+        href: https://seerr.yoleer.eu
+        description: Media Requests
+        siteMonitor: http://192.168.1.31:5055
+
+    - Wizarr:
+        icon: wizarr.png
+        href: https://wizarr.yoleer.eu
+        description: User Invitations
+        siteMonitor: https://wizarr.yoleer.eu
+
+- Automation:
+    - qBittorrent:
+        icon: qbittorrent.png
+        href: http://192.168.1.30:8080
+        description: Torrent Downloader
+        siteMonitor: http://192.168.1.30:8080
+
+    - Bazarr:
+        icon: bazarr.png
+        href: http://192.168.1.30:6767
+        description: Subtitle Downloader
+        siteMonitor: http://192.168.1.30:6767
+
+    - Radarr:
+        icon: radarr.png
+        href: http://192.168.1.30:7878
+        description: Movie Manager
+        siteMonitor: http://192.168.1.30:7878
+
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://192.168.1.30:9696
+        description: Indexer Manager
+        siteMonitor: http://192.168.1.30:9696
+
+    - Profilarr:
+        icon: profilarr.png
+        href: http://192.168.1.30:6868
+        description: Automatic profile manager
+        siteMonitor: http://192.168.1.30:6868
+
+    - Sonarr:
+        icon: sonarr.png
+        href: http://192.168.1.30:8989
+        description: TV Manager
+        siteMonitor: http://192.168.1.30:8989
+
+- Networking & Security:
+    - NGINX Proxy Manager:
+        icon: nginx-proxy-manager.png
+        href: http://192.168.1.32:81
+        description: Reverse Proxy
+        siteMonitor: http://192.168.1.32:81
+
+    - Vaultwarden:
+        icon: vaultwarden.png
+        href: https://vault.yoleer.eu
+        description: Password Manager
+        siteMonitor: https://vault.yoleer.eu
+
+    - Pi-hole:
+        icon: pi-hole.png
+        href: http://192.168.1.32:8081/admin/login
+        description: DNS & Ad Blocking
+        siteMonitor: http://192.168.1.32:8081
+
+    - NetBird:
+        icon: netbird.png
+        href: https://netbird.yoleer.eu
+        description: Mesh VPN
+        siteMonitor: https://netbird.yoleer.eu
