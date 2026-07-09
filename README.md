@@ -4,7 +4,7 @@
 
 **A fully self-hosted homelab built for privacy, resilience, and zero third-party dependencies.**
 
-*Two Proxmox nodes · One Oracle VPS · Self-managed DNS · Self-hosted VPN · Self-hosted Mail*
+*Clustered Proxmox nodes · One Oracle VPS · Self-managed DNS · Self-hosted VPN · Self-hosted Mail*
 
 ---
 
@@ -21,7 +21,7 @@
 
 Makana Network is a personal homelab running entirely on self-owned hardware and self-managed services. No Cloudflare, no Tailscale, no DuckDNS — everything from DNS to VPN to email is owned and operated in-house.
 
-The setup consists of two on-premise Proxmox nodes and one Oracle Cloud VPS, all connected via a self-hosted NetBird WireGuard mesh. Services run inside Docker LXCs on Proxmox, organized by function.
+The setup consists of two **clustered** on-premise Proxmox nodes (James + Stella) and one Oracle Cloud VPS (Fred), all connected via a self-hosted NetBird WireGuard mesh. James and Stella share a single Proxmox cluster with quorum device support from Fred, allowing unified management and live LXC migration between nodes. Services run inside Docker LXCs, organized by function.
 
 ---
 
@@ -29,11 +29,30 @@ The setup consists of two on-premise Proxmox nodes and one Oracle Cloud VPS, all
 
 | Node | Hostname | Role | CPU | RAM | Storage |
 |------|----------|------|-----|-----|---------|
-| Proxmox Node 1 | **James** | Primary node · Game servers · Future TrueNAS | Intel i7-6700 | 32GB DDR4 | SSD |
-| Proxmox Node 2 | **Stella** | Secondary node · All current services | Intel i5-4590 | 12GB DDR3 | 1x SSD | 1x HDD |
-| Oracle Cloud VPS | **Fred** | Mail server · NetBird management | AMD (Always Free) | 1GB + 8GB swap | 44GB |
+| Proxmox Node 1 | **James** | Cluster node · Game servers · Future TrueNAS | Intel i7-6700 | 32GB DDR4 | SSD |
+| Proxmox Node 2 | **Stella** | Cluster node · Primary services · 2TB media HDD | Intel i5-4590 | 12GB DDR3 | 1x SSD, 1x 2TB HDD |
+| Oracle Cloud VPS | **Fred** | Mail server · NetBird management · Cluster QDevice | AMD (Always Free) | 1GB + 8GB swap | 44GB |
 
-> **ℹ️ Note:** James is the intended primary node. Once the HBA and SAS drives arrive, James will host TrueNAS Scale and become the main storage and compute node. Stella hosts all services in the interim.
+> **ℹ️ Note:** James is the intended primary/performance node. Once the HBA and SAS drives arrive, James will host TrueNAS Scale and become the main storage and compute node. Stella hosts most services in the interim, with James currently running game servers and standing by as a live migration/failover target.
+
+---
+
+## 🧩 Proxmox Cluster
+
+James and Stella are joined into a single Proxmox cluster (`prox-cluster`), managed from either node's web UI (`https://192.168.1.10:8006` or `https://192.168.1.11:8006`).
+
+| Setting | Value |
+|---------|-------|
+| **Cluster name** | `prox-cluster` |
+| **Corosync link** | Direct LAN (`192.168.1.10` ↔ `192.168.1.11`) — not routed over NetBird |
+| **Quorum** | 2 node votes + 1 QDevice vote (Fred) = 3 total |
+| **QDevice host** | Fred, via `corosync-qnetd` on port `5403` (opened in both Oracle Security List and local iptables) |
+| **Storage per node** | Local `local-lvm` (LVM-thin) — no shared/network storage yet |
+| **Migration type** | Offline (`pct migrate <vmid> <node> --restart`) — disk copied over direct LAN |
+
+The QDevice on Fred acts as a tie-breaking third vote, so the cluster retains quorum (and stays writable) if either James or Stella goes offline individually — a plain 2-node cluster would otherwise lose quorum and become read-only if one node dropped.
+
+> **Note:** True unplanned-failure HA (auto-restart on power loss) isn't yet possible since storage is local-only — see [Planned: Storage & HA](#-storage--ha-pending-hardware-arrival) below.
 
 ---
 
@@ -48,57 +67,77 @@ The setup consists of two on-premise Proxmox nodes and one Oracle Cloud VPS, all
 | **Reverse proxy** | NGINX Proxy Manager |
 | **Domain** | `yoleer.eu` (Namecheap) |
 | **Dynamic DNS** | ddclient → Namecheap API |
-| **ISP** | Broadband2 Sweden — 1000/1000 Mbps |
+| **ISP** | Broadband2 Sweden — 1000/1000 Mbps (~800-940Mbps real-world) |
+
+**Planned network upgrade:** replacing the current switch with a 2.5GbE model and connecting James directly to it (rather than through the AP-router uplink), removing the AP-router as a bottleneck for James ↔ Stella traffic. The AP-router will then serve purely as a Wi-Fi access point.
 
 ---
 
-## 🗂️ Nodes
+## 🗂️ Nodes & Containers
+
+Container VMIDs are unified cluster-wide (100–105) and organized numerically by function, regardless of which physical node currently hosts them.
 
 ### 🟠 James — `192.168.1.10`
-> Intended primary node. Currently running game servers only, pending storage hardware arrival.
+> Cluster node. Currently running game servers, standing by as capacity for future services and migration target.
 
-| LXC | IP | Services |
-|-----|----|---------|
-| Game-Servers | `192.168.1.34` | Crafty Controller · Minecraft servers · Velocity proxy |
+| VMID | LXC | IP | Services |
+|------|-----|----|---------|
+| 104 | Game-Servers | `192.168.1.34` | Crafty Controller · Minecraft servers · Velocity proxy |
+| 105 | docker (test) | DHCP | Test/sandbox container |
 
 ---
 
 ### 🟣 Stella — `192.168.1.11`
-> Secondary node. Currently hosting all primary services while James is being prepared.
+> Cluster node. Currently hosting all primary services, plus the 2TB media HDD (`/mnt/pve/media`, mounted into Torrenting and Media containers).
 
-| LXC | IP | Services |
-|-----|----|---------|
-| Torrenting | `192.168.1.30` | qBittorrent · Sonarr · Radarr · Bazarr · Prowlarr · Profilarr |
-| Media | `192.168.1.31` | Jellyfin · Jellyseerr · Wizarr |
-| Networking | `192.168.1.32` | NGINX Proxy Manager · Pi-hole · Unbound · Crowdsec · ddclient |
-| Services | `192.168.1.33` | Nextcloud · Vaultwarden · Homepage · Portainer |
+| VMID | LXC | IP | Services |
+|------|-----|----|---------|
+| 100 | Networking | `192.168.1.32` | NGINX Proxy Manager · Pi-hole · Unbound · Crowdsec · ddclient — **HA-managed** |
+| 101 | Services | `192.168.1.33` | Nextcloud · Vaultwarden · Homepage · Portainer |
+| 102 | Media | `192.168.1.31` | Jellyfin · Jellyseerr · Wizarr |
+| 103 | Torrenting | `192.168.1.30` | qBittorrent · Sonarr · Radarr · Bazarr · Prowlarr · Profilarr |
 
 ---
 
-### 🔵 Fred — Oracle Cloud VPS
-> Always-on cloud node. Public-facing mail and NetBird coordination server.
+### 🔵 Fred — Oracle Cloud VPS (`82.70.56.40` public / `100.100.127.163` NetBird)
+> Always-on cloud node. Public-facing mail, NetBird coordination, and cluster quorum witness.
 
 | Service | Purpose |
 |---------|---------|
 | Maddy | Self-hosted SMTP/IMAP mail server |
 | NetBird stack | Zitadel · Management · Signal · Relay · Caddy |
+| corosync-qnetd | Proxmox cluster QDevice (tie-breaking quorum vote for James/Stella) |
 
 ---
 
-## 🔒 Mesh VPN
+## 🛡️ High Availability
 
-All nodes connected via **self-hosted NetBird** using encrypted WireGuard tunnels. No third-party VPN provider.
+The **Networking** LXC (100 — Pi-hole, NPM, Unbound, DNS) is configured as an HA-managed resource, since a full network/DNS outage on this container takes down internet access for the whole house.
 
-| Peer | Hostname | Type |
-|------|----------|------|
-| James | `james.netbird.selfhosted` | Home node |
-| Stella | `stella.netbird.selfhosted` | Home node |
-| Fred | `fred.netbird.selfhosted` | Cloud VPS |
-| Mark-1 | `mark-1.netbird.selfhosted` | Desktop (CachyOS) |
-| Mark-2 | `mark-2.netbird.selfhosted` | Laptop (CachyOS) |
-| Tonys26 | `tonys26.netbird.selfhosted` | Android phone |
+| Setting | Value |
+|---------|-------|
+| **HA resource** | `ct:100` |
+| **Affinity rule** | `networking-affinity` — Stella priority 2, James priority 1 (prefers Stella for faster network path; James is behind the AP-router bottleneck) |
+| **Failback** | Enabled (default) — automatically returns to Stella once Stella rejoins after maintenance |
+| **Failover type** | Planned/graceful only, via node maintenance mode — **not** automatic on sudden power loss (requires local-only storage to be copied live, which needs the source node to still be responsive) |
 
-Subnet route `192.168.1.0/24` is advertised by both James and Stella for redundant home LAN access from any peer.
+**Planned maintenance workflow** (e.g. before rebooting Stella):
+```bash
+ha-manager crm-command node-maintenance enable Stella
+# wait for ha-manager status to show ct:100 relocated + started on james
+reboot
+# once back up:
+ha-manager crm-command node-maintenance disable Stella
+# ct:100 auto-migrates back to Stella due to failback + priority
+```
+
+**Manual migration** (non-HA containers, e.g. moving Services back to Stella):
+```bash
+# run FROM the node the container currently lives on
+pct migrate 101 Stella --restart
+```
+
+> True zero-downtime failover isn't achievable yet for any container, since LXC live migration (CRIU-based) still involves a brief freeze, and Docker's internal networking/namespaces make it unreliable anyway — restart-style migration (~2 minutes for an 8GB container over direct LAN) is the practical baseline until shared/replicated storage is in place.
 
 ---
 
@@ -151,17 +190,18 @@ Access:    Thunderbird over NetBird mesh (no public IMAP/SMTP exposure)
 
 ---
 
-## 🛡️ Security
+## 🔒 Security
 
 | Layer | Implementation |
 |-------|---------------|
 | Intrusion detection | Crowdsec + iptables bouncer (Networking LXC) |
-| Firewall | Minimal open ports — only 80, 443, 25565, 25566 |
-| Inter-node traffic | Encrypted WireGuard via NetBird mesh |
+| Firewall | Minimal open ports — 80, 443, 25565, 25566 (home), 5403 (Fred, cluster QDevice only) |
+| Inter-node traffic | Direct LAN for cluster/migration traffic; encrypted WireGuard (NetBird) for remote management and Fred communication |
 | TLS | Let's Encrypt via NPM for all public services |
 | DNS privacy | Unbound recursive resolver — no upstream provider |
 | Dynamic IP | ddclient → Namecheap API (no DuckDNS dependency) |
 | Proxying | No Cloudflare — fully self-managed |
+| SSH | Key-based auth only on Fred (no password auth) |
 
 ---
 
@@ -170,18 +210,18 @@ Access:    Thunderbird over NetBird mesh (no public IMAP/SMTP exposure)
 ### ⚡ Short Term
 - [ ] Uptime Kuma on Fred for external monitoring + phone alerts
 - [ ] Automated Maddy mail backups
+- [ ] 2.5GbE switch upgrade — direct James connection, AP-router demoted to Wi-Fi-only
 
 ### 💾 Storage & HA *(pending hardware arrival)*
 - [ ] Dell H310 HBA (LSI 9211-8i, IT Mode)
 - [ ] 3x HP 8TB SAS HDDs — ZFS RAIDZ pool on James
 - [ ] TrueNAS Scale VM on James with NFS shares
-- [ ] Ceph cluster (James + Stella, Fred as quorum witness)
-- [ ] Proxmox HA — live LXC migration between nodes
+- [ ] Ceph cluster or ZFS replication (James + Stella) for true unplanned-failure HA
 - [ ] Proxmox Backup Server → TrueNAS pool
 
 ### 🔮 Future
-- [ ] HA for Pi-Hole between Stella & James for redundancy
-- [ ] Dual-node HA mail once Ceph shared storage is in place
+- [ ] Extend HA to Media/Torrenting once shared/replicated storage exists
+- [ ] Dual-node HA mail once shared storage is in place
 - [ ] Dovecot replication for redundant IMAP
 - [ ] Homepage widgets (Proxmox, Jellyfin, Pi-hole API integration)
 - [ ] Expand Minecraft server capacity for larger player count
