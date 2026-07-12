@@ -21,12 +21,9 @@ This repository serves as both operational documentation and a record of the arc
 
 ## 📊 Infrastructure Statistics
 
-| Resource | Count | Resource | Count |
-|----------|------:|----------|------:|
-| Physical Servers | 2 | Public Services | 8 |
-| Cloud VPS | 1 | Domains | 1 |
-| Linux Containers | 6 | Reverse Proxies | 1 |
-| Docker Containers | 20+ | | |
+| 🖥️ Physical Servers | ☁️ Cloud VPS | 📦 Linux Containers | 🐳 Docker Containers | 🌐 Public Services | 🌍 Domains | 🔀 Reverse Proxies |
+|:-------------------:|:------------:|:------------------:|:-------------------:|:-----------------:|:----------:|:-----------------:|
+|         **2**        |     **1**    |       **6**        |       **20+**       |       **8**       |   **1**    |       **1**       |
 
 ---
 
