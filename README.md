@@ -2,7 +2,11 @@
 
 # 🏠 Makana Network
 
-**A fully self-hosted homelab built for privacy, resilience, and zero third-party dependencies.**
+*A production-inspired homelab built to develop practical skills in Linux administration, virtualization, networking, security, and self-hosting.*
+
+Makana Network powers my personal infrastructure using a clustered Proxmox environment, self-hosted networking services, reverse proxies, VPN, email, media stack, and automated workflows.
+
+This repository serves as both operational documentation and a record of the architectural decisions behind the environment.
 
 *Clustered Proxmox nodes · One Oracle VPS · Self-managed DNS · Self-hosted VPN · Self-hosted Mail*
 
@@ -14,12 +18,37 @@
 [![Let's Encrypt](https://img.shields.io/badge/TLS-Let's%20Encrypt-003A70?style=flat)](https://letsencrypt.org)
 
 </div>
+---
+
+## 📊 Infrastructure Statistics
+
+| Resource | Count |
+|----------|------:|
+| Physical Servers | 2 |
+| Cloud VPS | 1 |
+| Linux Containers | 6 |
+| Docker Containers | 20+ |
+| Public Services | 8 |
+| Domains | 1 |
+| Reverse Proxies | 1 |
+
+---
+
+## 🚀 Project at a Glance
+
+- 🖥️ 2-node Proxmox VE cluster
+- 📦 6 production Linux Containers
+- 🐳 20+ Docker services
+- 🌐 Self-hosted DNS, VPN & Email
+- 🔒 Reverse proxy with TLS & CrowdSec
+- ☁️ Hybrid on-prem + Oracle Cloud VPS
+- 📚 Complete infrastructure documentation
 
 ---
 
 ## 📖 Overview
 
-Makana Network is a personal homelab running entirely on self-owned hardware and self-managed services. No Cloudflare, no Tailscale, no DuckDNS — everything from DNS to VPN to email is owned and operated in-house.
+Makana Network is a personal homelab running entirely on self-owned hardware and Oracle VPS. I aim to minimize reliance on third-party infrastructure wherever practical while self-hosting core services such as DNS, VPN and email.
 
 The setup consists of two **clustered** on-premise Proxmox nodes (James + Stella) and one Oracle Cloud VPS (Fred), all connected via a self-hosted NetBird WireGuard mesh. James and Stella share a single Proxmox cluster with quorum device support from Fred, allowing unified management and live LXC migration between nodes. Services run inside Docker LXCs, organized by function.
 
@@ -56,6 +85,34 @@ The QDevice on Fred acts as a tie-breaking third vote, so the cluster retains qu
 
 ---
 
+## 🎯 Why this project exists
+
+Makana Network started as a way to learn Linux and self-hosting, but has grown into the infrastructure that powers my personal services and continues to serve as my learning platform for systems administration and networking.
+
+The goal is to understand how infrastructure is designed, deployed, secured, documented and maintained.
+
+Every major change is documented in this repository to provide both operational documentation and a historical record of architectural decisions.
+---
+
+## 🏗️ Architecture
+
+The environment follows a layered design.
+
+Internet
+        ↓
+Router
+        ↓
+Networking LXC
+        ↓
+Reverse Proxy
+        ↓
+Service LXCs
+        ↓
+Docker Containers
+
+Core networking services are isolated from application workloads, with infrastructure split across dedicated Linux Containers to reduce service coupling and simplify maintenance.
+
+---
 ## 🌐 Network
 
 | Setting | Value |
@@ -176,7 +233,7 @@ All services exposed via **NGINX Proxy Manager** with **Let's Encrypt TLS**. Rou
 
 ## 💿 ARM
 
-# The Media workload includes a custom automated ripping workflow:
+### The Media workload includes a custom automated ripping workflow:
 
 Disc insertion on James
         |
@@ -256,6 +313,23 @@ Access:    Thunderbird over NetBird mesh (no public IMAP/SMTP exposure)
 - [ ] Dovecot replication for redundant IMAP
 - [ ] Homepage widgets (Proxmox, Jellyfin, Pi-hole API integration)
 - [ ] Expand Minecraft server capacity for larger player count
+
+---
+
+## 📖 Technical Experience Gained
+
+Building Makana Network has given me hands-on experience with:
+
+- Linux system administration
+- Networking and DNS
+- Virtualization with Proxmox
+- High availability concepts
+- Reverse proxying
+- VPN infrastructure
+- Self-hosted email
+- Security hardening
+- Infrastructure documentation
+- Troubleshooting production-like systems
 
 ---
 
