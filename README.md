@@ -23,7 +23,7 @@ This repository serves as both operational documentation and a record of the arc
 ## 📊 Infrastructure Statistics
 
 | Resource | Count |
-|----------|------:|
+|----------|------|
 | Physical Servers | 2 |
 | Cloud VPS | 1 |
 | Linux Containers | 6 |
