@@ -18,12 +18,11 @@ This repository serves as both operational documentation and a record of the arc
 [![Let's Encrypt](https://img.shields.io/badge/TLS-Let's%20Encrypt-003A70?style=flat)](https://letsencrypt.org)
 
 </div>
----
 
 ## 📊 Infrastructure Statistics
 
 | Resource | Count |
-|----------|------|
+|----------------------------------------------|
 | Physical Servers | 2 |
 | Cloud VPS | 1 |
 | Linux Containers | 6 |
