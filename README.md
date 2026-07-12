@@ -174,6 +174,37 @@ All services exposed via **NGINX Proxy Manager** with **Let's Encrypt TLS**. Rou
 
 ---
 
+## 💿 ARM
+
+# The Media workload includes a custom automated ripping workflow:
+
+Disc insertion on James
+        |
+        v
+udev host trigger
+        |
+        v
+CT 102 worker
+        |
+        +--> MakeMKV rip
+        +--> TMDb title lookup
+        +--> Intel VA-API H.264 transcode
+        +--> Embedded audio and subtitles preserved
+        +--> Final Radarr/Jellyfin folder naming
+        `--> Copy into /media/content/movies as UID:GID 1000:1000
+```
+
+The Intel i7-6700 uses two different VA-API drivers for compatibility:
+
+| Workload | Driver | Mode |
+|---|---|---|
+| ARM transcoding | `iHD` | H.264 low-power CQP |
+| Jellyfin transcoding | `i965` | H.264 VBR |
+
+Detailed host documentation is under [`Hosts/James/ARM/`](Hosts/James/ARM/).
+
+---
+
 ## 📧 Email
 
 Self-hosted mail using **Maddy** on Fred — Google Free.
