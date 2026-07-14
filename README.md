@@ -30,7 +30,7 @@ This repository serves as both operational documentation and a record of the arc
 ## 🚀 Project at a Glance
 
 - 🖥️ 2-node Proxmox VE cluster
-- 📦 6 production Linux Containers
+- 📦 6 Linux Containers
 - 🐳 20+ Docker services
 - 🌐 Self-hosted DNS, VPN & Email
 - 🔒 Reverse proxy with TLS & CrowdSec
@@ -43,7 +43,7 @@ This repository serves as both operational documentation and a record of the arc
 
 Makana Network is a personal homelab running entirely on self-owned hardware and Oracle VPS. I aim to minimize reliance on third-party infrastructure wherever practical while self-hosting core services such as DNS, VPN and email.
 
-The setup consists of two **clustered** on-premise Proxmox nodes (James + Stella) and one Oracle Cloud VPS (Fred), all connected via a self-hosted NetBird WireGuard mesh. James and Stella share a single Proxmox cluster with quorum device support from Fred, allowing unified management and live LXC migration between nodes. Services run inside Docker LXCs, organized by function.
+The setup consists of two **clustered** on-premise Proxmox nodes (James + Stella) and one Oracle Cloud VPS (Fred), all connected via a self-hosted NetBird WireGuard mesh. James and Stella share a single Proxmox cluster with quorum device support from Fred, allowing unified management and restart-style LXC migration between nodes. Services run as Docker containers inside function-specific LXCs.
 
 ---
 
@@ -51,11 +51,11 @@ The setup consists of two **clustered** on-premise Proxmox nodes (James + Stella
 
 | Node | Hostname | Role | CPU | RAM | Storage |
 |------|----------|------|-----|-----|---------|
-| Proxmox Node 1 | **James** | Cluster node · Game servers · Future TrueNAS | Intel i7-6700 | 32GB DDR4 | SSD |
+| Proxmox Node 1 | **James** | Cluster node · Media Server · Game servers · Future TrueNAS | Intel i7-6700 | 32GB DDR4 | SSD |
 | Proxmox Node 2 | **Stella** | Cluster node · Primary services · 2TB media HDD | Intel i5-4590 | 12GB DDR3 | 1x SSD, 1x 2TB HDD |
 | Oracle Cloud VPS | **Fred** | Mail server · NetBird management · Cluster QDevice | AMD (Always Free) | 1GB + 8GB swap | 44GB |
 
-> **ℹ️ Note:** James is the intended primary/performance node. Once the HBA and SAS drives arrive, James will host TrueNAS Scale and become the main storage and compute node. Stella hosts most services in the interim, with James currently running game servers and standing by as a live migration/failover target.
+> **ℹ️ Note:** James is the primary performance node and currently hosts the Media, Game-Servers, and test Docker LXCs. Stella hosts networking, primary services, torrent automation, and the current 2TB media disk. Once the HBA and SAS drives arrive, James will host TrueNAS SCALE and become the main storage and compute node.
 
 ---
 
@@ -90,6 +90,7 @@ Every major change is documented in this repository to provide both operational 
 ## 🏗️ Architecture
 
 The environment follows a layered design.
+```
 
 Internet
         ↓
@@ -102,6 +103,7 @@ Reverse Proxy
 Service LXCs
         ↓
 Docker Containers
+```
 
 Core networking services are isolated from application workloads, with infrastructure split across dedicated Linux Containers to reduce service coupling and simplify maintenance.
 
@@ -134,6 +136,9 @@ Container VMIDs are unified cluster-wide (100–105) and organized numerically b
 |------|-----|----|---------|
 | 104 | Game-Servers | `192.168.1.34` | Crafty Controller · Minecraft servers · Velocity proxy |
 | 105 | docker (test) | DHCP | Test/sandbox container |
+| 102 | Media | `192.168.1.31` | Jellyfin · Jellyseerr · Wizarr · ARM |
+
+> CT 100 normally runs on Stella but can be migrated to James during planned maintenance.
 
 ---
 
@@ -144,7 +149,6 @@ Container VMIDs are unified cluster-wide (100–105) and organized numerically b
 |------|-----|----|---------|
 | 100 | Networking | `192.168.1.32` | NGINX Proxy Manager · Pi-hole · Unbound · Crowdsec · ddclient — **HA-managed** |
 | 101 | Services | `192.168.1.33` | Nextcloud · Vaultwarden · Homepage · Portainer |
-| 102 | Media | `192.168.1.31` | Jellyfin · Jellyseerr · Wizarr |
 | 103 | Torrenting | `192.168.1.30` | qBittorrent · Sonarr · Radarr · Bazarr · Prowlarr · Profilarr |
 
 ---
@@ -209,7 +213,7 @@ Device query
 
 ## 🌍 Public Services
 
-All services exposed via **NGINX Proxy Manager** with **Let's Encrypt TLS**. Router only forwards ports `80`, `443`, `25565`, and `25566`.
+Web services are exposed through **NGINX Proxy Manager** with **Let's Encrypt TLS**. Maddy runs independently on Fred for SMTP and IMAP. The home router only forwards ports `80`, `443`, `25565`, and `25566`.
 
 | Subdomain | Service |
 |-----------|---------|
@@ -227,7 +231,7 @@ All services exposed via **NGINX Proxy Manager** with **Let's Encrypt TLS**. Rou
 ## 💿 ARM
 
 ### The Media workload includes a custom automated ripping workflow:
-
+```
 Disc insertion on James
         |
         v
@@ -240,7 +244,7 @@ CT 102 worker
         +--> TMDb title lookup
         +--> Intel VA-API H.264 transcode
         +--> Embedded audio and subtitles preserved
-        +--> Final Radarr/Jellyfin folder naming
+        +--> Radarr/Jellyfin-compatible folder naming
         `--> Copy into /media/content/movies as UID:GID 1000:1000
 ```
 
@@ -257,7 +261,7 @@ Detailed host documentation is under [`Hosts/James/ARM/`](Hosts/James/ARM/).
 
 ## 📧 Email
 
-Self-hosted mail using **Maddy** on Fred — Google Free.
+Self-hosted mail using **Maddy** on Fred — independent of Google-hosted mail.
 
 ```
 Inbound:   Internet → mx.yoleer.eu (Fred:25) → Maddy → IMAP
